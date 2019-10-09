@@ -1,10 +1,4 @@
 // C Program to design a shell in Linux
-/**
- * Solution to the shell interface program.
- *
- * Operating System Concepts - Ninth Edition
- * Copyright John Wiley & Sons - 2013
- */
 
 #include <stdio.h>
 #include <unistd.h>
@@ -23,17 +17,12 @@ char display_history [MAX_COMMANDS][MAX_LINE];
 
 int command_count = 0;
 
-/**
- * Add the most recent command to the history.
- */
-
+//Add the most recent command to the history.
 void addtohistory(char inputBuffer[])
 {
     int i = 0;
-
     // add the command to history
     strcpy(history[command_count % MAX_COMMANDS], inputBuffer);
-
     // add the display-style command to history
     while (inputBuffer[i] != '\n' && inputBuffer[i] != '\0')
         {
@@ -41,9 +30,7 @@ void addtohistory(char inputBuffer[])
             i++;
         }
     display_history[command_count % MAX_COMMANDS][i] = '\0';
-
     ++command_count;
-
     return;
 }
 
@@ -61,17 +48,14 @@ int setup(char inputBuffer[], char *args[],int *background)
         start,			/* index where beginning of next command parameter is */
         ct,				/* index of where to place the next parameter into args[] */
         command_number;	/* index of requested command number */
-
     ct = 0;
 
     /* read what the user enters on the command line */
-    do
-        {
+    do{
             printf("osh>");
             fflush(stdout);
             length = read(STDIN_FILENO,inputBuffer,MAX_LINE);
-        }
-    while (inputBuffer[0] == '\n'); /* swallow newline characters */
+    }while (inputBuffer[0] == '\n'); /* swallow newline characters */
 
     /**
      *  0 is the system predefined file descriptor for stdin (standard input),
@@ -92,70 +76,59 @@ int setup(char inputBuffer[], char *args[],int *background)
      * and disregard the -1 value
      */
     if ( (length < 0) && (errno != EINTR) )
-        {
-            perror("error reading the command");
-            exit(-1);           /* terminate with error code of -1 */
-        }
+    {
+        perror("error reading the command");
+        exit(-1);           /* terminate with error code of -1 */
+    }
 
-    /**
-     * Check if they are using history
-     */
-
+    //Check if they are using history
     if (inputBuffer[0] == '!')
-        {
-            if (command_count == 0)
-                {
-                    printf("No history\n");
-                    return 1;
-                }
-            else if (inputBuffer[1] == '!')
-                {
-                    // restore the previous command
-                    strcpy(inputBuffer,history[(command_count - 1) % MAX_COMMANDS]);
-                    length = strlen(inputBuffer) + 1;
-                }
-            else if (isdigit(inputBuffer[1]))   /* retrieve the nth command */
-                {
-                    command_number = atoi(&inputBuffer[1]);
-                    strcpy(inputBuffer,history[command_number]);
-                    length = strlen(inputBuffer) + 1;
-                }
-        }
+    {
+        if (command_count == 0)
+            {
+                printf("No history\n");
+                return 1;
+            }
+        else if (inputBuffer[1] == '!')
+            {
+                // restore the previous command
+                strcpy(inputBuffer,history[(command_count - 1) % MAX_COMMANDS]);
+                length = strlen(inputBuffer) + 1;
+            }
+        else if (isdigit(inputBuffer[1]))   /* retrieve the nth command */
+            {
+                command_number = atoi(&inputBuffer[1]);
+                strcpy(inputBuffer,history[command_number]);
+                length = strlen(inputBuffer) + 1;
+            }
+    }
 
-
-    /**
-     * Add the command to the history
-     */
-
+    //Add the command to the history
     addtohistory(inputBuffer);
 
-    /**
-     * Parse the contents of inputBuffer
-     */
-
+    //Parse the contents of inputBuffer
     for (i=0; i<length; i++)
         {
             /* examine every character in the inputBuffer */
-
             switch (inputBuffer[i])
                 {
                 case ' ':
                 case '\t' :               /* argument separators */
                     if(start != -1)
-                        {
-                            args[ct] = &inputBuffer[start];    /* set up pointer */
-                            ct++;
-                        }
+                    {
+                       args[ct] = &inputBuffer[start];    /* set up pointer */
+                       ct++;
+                    }
                     inputBuffer[i] = '\0'; /* add a null char; make a C string */
                     start = -1;
                     break;
 
                 case '\n':                 /* should be the final char examined */
                     if (start != -1)
-                        {
-                            args[ct] = &inputBuffer[start];
-                            ct++;
-                        }
+                    {
+                        args[ct] = &inputBuffer[start];
+                        ct++;
+                    }
                     inputBuffer[i] = '\0';
                     args[ct] = NULL; /* no more arguments to this command */
                     break;
@@ -164,135 +137,121 @@ int setup(char inputBuffer[], char *args[],int *background)
                     if (start == -1)
                         start = i;
                     if (inputBuffer[i] == '&')
-                        {
-                            *background  = 1;
-                            inputBuffer[i-1] = '\0';
-                        }
+                    {
+                        *background  = 1;
+                        inputBuffer[i-1] = '\0';
+                    }
                 } /* end of switch */
         }    /* end of for */
 
-    /**
-     * If we get &, don't enter it in the args array
-     */
-
+    //If we get &, don't enter it in the args array
     if (*background)
         args[--ct] = NULL;
-
     args[ct] = NULL; /* just in case the input line was > 80 */
-
     return 1;
-
 } /* end of setup routine */
 
 void fileOut(char * args[], char* outputFile)
 {
     int fileDescriptor;
-    /* Mở một file hoặc tạo file mới để ghi vào (O_WRONLY) tiếp từ cuối file (O_APPEND) */
-    // O_CREAT: Tao file neu chua ton tai. O_TRUNC: . O_WONLY: chi doc file.
+    /* Mở một file hoặc tạo file mới để ghi vào (O_WRONLY) tiếp từ cuối file (O_APPEND) 
+    O_CREAT: Tao file neu chua ton tai. O_TRUNC: . O_WONLY: chi doc file.*/
     fileDescriptor = open(outputFile, O_CREAT | O_WRONLY | O_APPEND);
     dup2(fileDescriptor, STDOUT_FILENO);
     close(fileDescriptor);
     execvp(outputFile,args);
 }
+
 int main(void)
 {
     char inputBuffer[MAX_LINE]; 	/* buffer to hold the command entered */
     int background;             	/* equals 1 if a command is followed by '&' */
-    char *args[MAX_LINE/2 + 1];	/* command line (of 80) has max of 40 arguments */
+    char *args[MAX_LINE/2 + 1];	    /* command line (of 80) has max of 40 arguments */
     pid_t child;            		/* process id of the child process */
-    int status;           		/* result from execvp system call*/
+    int status;           		    /* result from execvp system call*/
     int shouldrun = 1;
 
     int i, upper;
 
-    while (shouldrun)             		/* Program terminates normally inside setup */
+    while (shouldrun)               /* Program terminates normally inside setup */
+    {
+        background = 0;
+        shouldrun = setup(inputBuffer,args,&background);       /* get next command */
+        if (strncmp(inputBuffer, "exit", 4) == 0)
+            return 0;
+        else if (strncmp(inputBuffer,"history", 7) == 0)
         {
-            background = 0;
-
-            shouldrun = setup(inputBuffer,args,&background);       /* get next command */
-
-            if (strncmp(inputBuffer, "exit", 4) == 0)
-                return 0;
-            else if (strncmp(inputBuffer,"history", 7) == 0)
-                {
-                    if (command_count < MAX_COMMANDS)
-                        upper = command_count;
-                    else
-                        upper = MAX_COMMANDS;
-
-                    for (i = 0; i < upper; i++)
-                        {
-                            printf("%d \t %s\n", i, display_history[i]);
-                        }
-
-                    continue;
-                }
-
-            if (shouldrun)
-                {
-                    int i =0;
-                    child = fork();          /* creates a duplicate process! */
-                    switch (child)
-                        {
-                        case -1:
-                            perror("could not fork the process");
-                            break; /* perror is a library routine that displays a system
-                        error message, according to the value of the system
-                        variable "errno" which will be set during a function
-                        (like fork) that was unable to successfully
-                        complete its task. */
-
-                        case 0: /* this is the child process */
-                            while(args[i])
-                                {
-                                    if(strncmp(args[i],"<",1)==0)
-                                        {
-                                            int fd1;
-                                            if ((fd1 = open(args[i+1],O_RDONLY )) == -1)
-                                                {
-                                                    perror ("fd failed");
-                                                    exit (EXIT_FAILURE);
-                                                }
-                                            dup2(fd1, 0);
-                                            close(fd1);
-                                            args[i]=NULL;
-                                            execvp(args[0],args);
-                                        }
-                                    else if (strncmp(args[i],">",1)==0){
-                                                int fd1;
-                                                if ((fd1 = open(args[i+1],
-                                                                O_WRONLY | O_CREAT | O_TRUNC | O_CREAT,
-                                                                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1)
-                                                    {
-                                                        perror ("fd failed");
-                                                        exit (EXIT_FAILURE);
-                                                    }
-                                                dup2(fd1, 1);
-                                                close(fd1);
-                                                args[i]=NULL;
-                                                execvp(args[0],args);
-                                            }
-
-                                    ++i;
-                                };
-                                status = execvp(args[0],args);
-
-                                if (status != 0)
-                                {
-                                    perror("error in execvp");
-                                    exit(-2); /* terminate this process with error code -2 */
-                                }
-                                break;
-
-                        default :  /* this is the parent */
-                            if (background == 0)
-                                {
-                                    while (child != wait(NULL));
-                                }
-
-                        }
-                }
+            if (command_count < MAX_COMMANDS)
+                upper = command_count;
+            else
+                upper = MAX_COMMANDS;
+            for (i = 0; i < upper; i++)
+            {
+                printf("%d \t %s\n", i, display_history[i]);
+            }
+            continue;
         }
+        if (shouldrun)
+        {
+            int i =0;
+            child = fork();          /* creates a duplicate process! */
+            switch (child)
+            {
+            case -1:
+                perror("could not fork the process");
+                break; /* perror is a library routine that displays a system
+            error message, according to the value of the system
+            variable "errno" which will be set during a function
+            (like fork) that was unable to successfully
+            complete its task. */
+            case 0: /* this is the child process */
+                while(args[i])
+                {
+                    if(strncmp(args[i],"<",1)==0)
+                    {
+                        int fd1;
+                        if ((fd1 = open(args[i+1],O_RDONLY )) == -1)
+                            {
+                                perror ("fd failed");
+                                exit (EXIT_FAILURE);
+                            }
+                        dup2(fd1, 0);
+                        close(fd1);
+                        args[i]=NULL;
+                        execvp(args[0],args);
+                    }
+                else if (strncmp(args[i],">",1)==0)
+                {
+                    int fd1;
+                    if ((fd1 = open(args[i+1],
+                        O_WRONLY | O_CREAT | O_TRUNC | O_CREAT,
+                        S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1)
+                    {
+                        perror ("fd failed");
+                        exit (EXIT_FAILURE);
+                    }
+                    dup2(fd1, 1);
+                    close(fd1);
+                    args[i]=NULL;
+                    execvp(args[0],args);
+                }
+                    ++i;
+                };
+                status = execvp(args[0],args);
+                if (status != 0)
+                {
+                    perror("error in execvp");
+                    exit(-2); /* terminate this process with error code -2 */
+                }
+                break;
+            default :  /* this is the parent */
+                if (background == 0)
+                {
+                    while (child != wait(NULL));
+                }
+            }
+        }
+    }
 
     return 0;
 }
